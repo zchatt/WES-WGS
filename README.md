@@ -1,13 +1,9 @@
 # WES-WGS
 Pipelines and tools for  WES and WGS data processing
 
-#################
-## bwa_gatk.sh ##
-#################
-
-# Align WGS or WES using BWA-MEM and call variants using GATK
-
-## Script description 
+# bwa_gatk.sh
+## Align WGS or WES using BWA-MEM and call variants using GATK
+### Script description 
 [1] Index the reference FASTA sequence for use with BWA
 [2] Align FASTQ reads with BWA-MEM to hg38 with ATL-contigs
 [3] Add read group information, preprocess to make a clean BAM and call variants
