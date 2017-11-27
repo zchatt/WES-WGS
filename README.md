@@ -16,10 +16,7 @@ Pipelines and tools for  WES and WGS data processing
    from foreign organisms (e.g. bacterial DNA in a non-bacterial sample), and unmap + label those reads accordingly. iii) When 
    UNMAP_CONTAMINANT_READS is set, then we must setMIN_UNCLIPPED_BASES (Integer), default = 32
 
-7. Base Recalibrator Report & 8. Perform Base Quality Score Recalibration (BQSR) - # Currently uncommented as previous studies 
-by Tian et al 2016 (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5048557/) found  BQSR had virtually negligible effect on INDEL calling 
-and generally reduced sensitivity for SNP calling and reduced the SNP calling sensitivity but improved the precision when the coverage 
-is insufficient. However, in regions of high divergence (e.g., the HLA region), BQSR reduced the sensitivity of callers. There is 
+#### 7. Base Recalibrator Report & 8. Perform Base Quality Score Recalibration (BQSR) - Currently uncommented as previous studies by Tian et al 2016 (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5048557/) found  BQSR had virtually negligible effect on INDEL calling and generally reduced sensitivity for SNP calling and reduced the SNP calling sensitivity but improved the precision when the coverage is insufficient. However, in regions of high divergence (e.g., the HLA region), BQSR reduced the sensitivity of callers. There is 
 currently not a good argument to support its use if we are using alt-aware alignment. # - This step attempts performs recalibration 
 os base score qualities using machine learning. Read Group information is used to identify the same sample/ run therefore this must 
 be performed prior to changing of read group information.
