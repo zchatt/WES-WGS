@@ -5,18 +5,18 @@ Pipelines and tools for  WES and WGS data processing
 ## Align WGS or WES using BWA-MEM and call variants using GATK
 ### Script description 
 1. Index the reference FASTA sequence for use with BWA
-[2] Align FASTQ reads with BWA-MEM to hg38 with ATL-contigs
-[3] Add read group information, preprocess to make a clean BAM and call variants
-[3.1] Create unmapped uBAM- This step uses Picard tools RevertSam function to revert sam file produced during alignment to 
+2. Align FASTQ reads with BWA-MEM to hg38 with ATL-contigs
+3. Add read group information, preprocess to make a clean BAM and call variants
+3.1. Create unmapped uBAM- This step uses Picard tools RevertSam function to revert sam file produced during alignment to 
   previous state. We clear read attributes that have prevented  alignments (XA: Alternative hits; format: (chr,pos,CIGAR,NM;) & 
   XS:Suboptimal alignment score) 
-[3.2] Add read group information to uBAM
-[3.3] Merge uBAM with aligned BAMi) Performed with Picard MergeBamAlignment. Needs to have FASTA dictionary file (.dic) in same 
+3.2. Add read group information to uBAM
+3.3. Merge uBAM with aligned BAMi) Performed with Picard MergeBamAlignment. Needs to have FASTA dictionary file (.dic) in same 
   directory as reference sequence.ii) Set UNMAP_CONTAMINANT_READS (Boolean) to “true” which enables detection of reads originating 
    from foreign organisms (e.g. bacterial DNA in a non-bacterial sample), and unmap + label those reads accordingly. iii) When 
    UNMAP_CONTAMINANT_READS is set, then we must setMIN_UNCLIPPED_BASES (Integer), default = 32
 
-[3.4] Base Recalibrator Report & [3.5] Perform Base Quality Score Recalibration (BQSR) - Currently uncommented as previous studies 
+[3.4] Base Recalibrator Report & [3.5] Perform Base Quality Score Recalibration (BQSR) - # Currently uncommented as previous studies 
 by Tian et al 2016 (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5048557/) found  BQSR had virtually negligible effect on INDEL calling 
 and generally reduced sensitivity for SNP calling and reduced the SNP calling sensitivity but improved the precision when the coverage 
 is insufficient. However, in regions of high divergence (e.g., the HLA region), BQSR reduced the sensitivity of callers. There is 
