@@ -42,4 +42,5 @@ moment https://gatkforums.broadinstitute.org/gatk/discussion/10104/picard-2-10-7
 1. ANNOVAR .vcf file annotioans with currently implemented annnotations that include; refGene,cytoBand,exac03,exac03nontcga,exac03nonpsych,avsnp147,dbnsfp33a,dbscsnv11,cosmic70,esp6500siv2_ea,esp6500siv2_aa,esp6500siv2_all,gnomad_exome,gnomad_genome,AFR.sites.2015_08,ALL.sites.2015_08,AMR.sites.2015_08,mcap,revel,clinvar_20170130
 
 RUN SCRIPT
+
 ~/scripts/annovar.sh CDS0024.20K_ /project/RDS-SMS-FFbigdata-RW/Genetics/Genomes/whole_genome_sequencing_2012/FASTQ/bwagatk_test/test_271117
