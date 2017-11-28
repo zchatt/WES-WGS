@@ -1,6 +1,13 @@
 # WES-WGS
 Pipelines and tools for  WES and WGS data processing
 
+# pjob_bwa_gatk.sh
+## Script creates and submits PBS batch script
+### Script description 
+1. Create submission script for rsync of .fastq files from RDS to HPC
+2. Creates submission script for bwa_gatk.sh
+3. Creates submission script for rsync of bwa_katk.sh results from HPC to RDS
+
 # bwa_gatk.sh
 ## Align WGS or WES using BWA-MEM and call variants using GATK
 ### Script description 
@@ -28,3 +35,10 @@ reference- UQ:i: Phred likelihood of the segment, conditional on the mapping bei
 Here we are using picard 2.7.1. With picard 2.10.6 and higher command is SetNmMDAndUqTags however seems to have piping issues at the 
 moment https://gatkforums.broadinstitute.org/gatk/discussion/10104/picard-2-10-7-fails-pipelining-sortsam-and-setnmanduqtags
 11. Call SNP and indel variants in reference confidence (ERC) mode per sample using HaplotypeCaller
+
+# annovar.sh
+## Annotates .vcf files from gatk using ANNOVAR
+### Script description 
+1. Currently implemented annnotations include; refGene,cytoBand,exac03,exac03nontcga,exac03nonpsych,avsnp147,dbnsfp33a,dbscsnv11,cosmic70,esp6500siv2_ea,esp6500siv2_aa,esp6500siv2_all,gnomad_exome,gnomad_genome,AFR.sites.2015_08,ALL.sites.2015_08,AMR.sites.2015_08,mcap,revel,clinvar_20170130
+
+
