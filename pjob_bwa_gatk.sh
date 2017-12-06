@@ -13,28 +13,34 @@ RSYNCFLAGS=-avx
 
 #default walltime for transfer job.
 SKIPREADTEST=""
-WALLTIME="100:00:00"
+CWALLTIME="72:00:00"
+WALLTIME="200:00:00"
 CMEM="16gb"
 CNCPUS="2"
 DEPEND="afterok"
-#PROJECT="FFbigdata"
-PROJECT="FFgenomics"
+DEPENDANY="afterany"
+PROJECT="FFbigdata"
+#PROJECT="FFgenomics"
 NAME="pjob"
 QSUBEXTRAFLAGS=""
+KEEPFQ=""
 
-MEM="32gb"
+MEM="64gb"
 NCPUS="6"
 
-#Default results folder, use -o to change
-RESULTS="/project/RDS-SMS-FFgenomics-RW/results"
 
 function usage {
 cat << _HERE
 usage $1 --from|-f <source> --to|-t <dest> --file|-f <folderlist> options
 from, to and project must be specified.
 where options are:
---from|-f = the source of the data
---to|-t = the destination of the data
+--project|-P <project> = project for PBS submission
+--from|-f <path> = the source of the data
+--to|-t <path> = the destination of temporary process space
+--output|-o <path> = the destination of results
+--plimit|-p <int eg. 1, 2, 3, etc> = the limit of parallel job to run concurrently
+--job|-j <file containing list of folder/file name> = the list of folder/file names to run gatk from the source(--from|-f).
+--keepfq|-kfq <path> = the destination of fq files
 
 --skip|-notest - skip testing of readable source. Useful if called from a node and /rds is the source which is not available on the calling node.
 
@@ -46,7 +52,6 @@ where options are:
 
 --rflags|-rf <rsync extra flags> - any extra rsync flags you may require.
 
---job|-j <file containing list of folder name> - the list of folder names to run after the copy.
 
 _HERE
 
@@ -90,6 +95,12 @@ do
 		RESULTS="$1"
 		shift
 		;;
+	--keepfq | -kfq)
+		shift
+		KEEPFQ="$1"
+		shift
+		;;
+
 	--rflags | -rf)
 		shift
 		rsyncflags="$1"
@@ -103,6 +114,11 @@ do
 	--job | -j)
 		shift
 		job="$1"
+		shift
+		;;
+	--plimit | -p)
+		shift
+		PLIMIT="$1"
 		shift
 		;;
 	--depend | -d)
@@ -180,19 +196,40 @@ if [ -z "$from" ]
 then
 	echo A source \(--from or -f\) must be specified.
 	exit 1
+else
+	echo [INFO] rsync from $from
 fi
 if [ -z "$to" ]
 then
 	echo A destination \(--to or -t\) must be specified.
 	exit 1
+else
+	echo [INFO] rsync to $to
 fi
 if [ -z "$job" ]
 then
 	echo A file list containing folder names \(--file or -f\) must be specified.
 	exit 1
 fi
-
-
+if [ -z "$RESULTS" ]
+then
+	echo [INFO] Output folder for results not specified. Default to output to /project/RDS-SMS-FFbigdata-RW/results
+	#Default results folder, use -o to change
+	RESULTS="/project/RDS-SMS-FFbigdata-RW/results"
+else
+	echo [INFO] Storing results to $RESULTS
+fi
+if [ -z "$PLIMIT" ]
+then
+	echo [INFO] Parallel running limit not specified. Default to 1.
+	PLIMIT=1
+fi
+if [ -z "$KEEPFQ" ]
+then
+	echo [INFO] Not keeping fastq files after processing.
+else
+	echo [INFO] Storing fastq input to $KEEPFQ
+fi
 
 QCOPYFLAGS="-q $TRANSFERQUEUE -P $PROJECT -j oe $QSUBEXTRAFLAGS"
 
@@ -237,9 +274,21 @@ checkpath "$to"
 QFLAGS="-P FFbigdata -j oe $QSUBEXTRAFLAGS"
 #QFLAGS="-P FFbigdata $QSUBEXTRAFLAGS"
 
+let count=0
+let pcount=0
+copy_from_sync_jobid=""
+next_accum_jobid=""
+cur_accum_jobid=""
+cur_joid=""
+
 echo "job submitted..."
 while read folder
 do          
+	#line count
+        ((count++))
+	#parallel count
+        ((pcount++))
+
 	#check if folder or file
 	echo "checkpath: " $from/$folder
 	finalto=$to
@@ -247,9 +296,9 @@ do
 	then
 		#rsync from folder to folder
 		echo "Found folder $from/$folder"
-		copy_from_sync_jobid=$(printf "#PBS -l select=1:ncpus=$CNCPUS:mem=$CMEM,walltime=$WALLTIME
+		copy_from_sync_jobid=$(printf "#PBS -l select=1:ncpus=$CNCPUS:mem=$CMEM,walltime=$CWALLTIME
 		#PBS -N $NAME"_"$folder"_start"
-		time $RSYNC $RSYNCFLAGS $rsyncflags $from/$folder $to" | qsub $QCOPYFLAGS)
+		time $RSYNC $RSYNCFLAGS $rsyncflags $from/$folder $to" | qsub -W depend=$DEPENDANY$cur_accum_jobid $QCOPYFLAGS)
 		#update finalto path with folder, as $to need to be reuse
 		finalto=$to/$folder
 		copy_from_sync_jobid=$(echo $copy_from_sync_jobid | cut -d'.' -f 1)
@@ -259,9 +308,9 @@ do
 		echo "No folder found $from/$folder"
 		#update finalto path with folder, as $to need to be reuse
 		finalto=$to/${folder%.*}
-		copy_from_sync_jobid=$(printf "#PBS -l select=1:ncpus=$CNCPUS:mem=$CMEM,walltime=$WALLTIME
+		copy_from_sync_jobid=$(printf "#PBS -l select=1:ncpus=$CNCPUS:mem=$CMEM,walltime=$CWALLTIME
 		#PBS -N $NAME"_"$folder"_start"
-		mkdir $finalto; time $RSYNC $RSYNCFLAGS $rsyncflags $from/$folder $finalto" | qsub $QCOPYFLAGS)
+		mkdir $finalto; time $RSYNC $RSYNCFLAGS $rsyncflags $from/$folder $finalto" | qsub -W depend=$DEPENDANY$cur_accum_jobid $QCOPYFLAGS)
 		copy_from_sync_jobid=$(echo $copy_from_sync_jobid | cut -d'.' -f 1)
 		echo $copy_from_sync_jobid", sync from $from/$folder to $finalto"
 	fi
@@ -271,22 +320,39 @@ do
 	then
 		gatk_jobid=$(printf "#PBS -l select=1:ncpus=$NCPUS:mem=$MEM,walltime=$WALLTIME
 		#PBS -N $NAME"_"$folder"_gatk"
-		/project/RDS-SMS-FFbigdata-RW/bg_rt/scripts/bwa_gatk.sh $folder $finalto $NCPUS" | qsub -W depend=$DEPEND:$copy_from_sync_jobid $QFLAGS)
+		/project/RDS-SMS-FFbigdata-RW/bg_rt/scripts/bwa_gatk.sh $folder $finalto $NCPUS" | qsub -W depend=$DEPENDANY$cur_accum_jobid -W depend=$DEPEND:$copy_from_sync_jobid $QFLAGS)
 		gatk_jobid=$(echo $gatk_jobid | cut -d'.' -f 1)
-		#echo $gatk_jobid", run gatk with gatk_bam.sh"
+		echo $gatk_jobid", run gatk"
 	fi
 
 	#rsync result back and remove rsync to folder
 	if [ ! -z "$gatk_jobid" ]
 	then
-		#folder=$(basename $finalto)
-		copy_back_to_jobid=$(printf "#PBS -l select=1:ncpus=$CNCPUS:mem=$CMEM,walltime=$WALLTIME
-		#PBS -N $NAME"_"${folder%.*}"_results"
-		$RSYNC $RSYNCFLAGS $rsyncflags $finalto $RESULTS; rm -rf $finalto" | qsub -W depend=$DEPEND:$copy_from_sync_jobid:$gatk_jobid $QCOPYFLAGS)
+		if [ ! -z "$KEEPFQ" ]
+		then
+			copy_back_to_jobid=$(printf "#PBS -l select=1:ncpus=$CNCPUS:mem=$CMEM,walltime=$CWALLTIME
+			#PBS -N $NAME"_"${folder%.*}"_results"
+			mkdir -p $KEEPFQ/$(basename $finalto); mv $finalto/*fq* $KEEPFQ/$(basename $finalto); $RSYNC $RSYNCFLAGS $rsyncflags $finalto $RESULTS; rm -rf $finalto" | qsub -W depend=$DEPENDANY$cur_accum_jobid -W depend=$DEPEND:$copy_from_sync_jobid:$gatk_jobid $QCOPYFLAGS)
+		else
+			copy_back_to_jobid=$(printf "#PBS -l select=1:ncpus=$CNCPUS:mem=$CMEM,walltime=$CWALLTIME
+			#PBS -N $NAME"_"${folder%.*}"_results"
+			rm $finalto/*.fq*; $RSYNC $RSYNCFLAGS $rsyncflags $finalto $RESULTS; rm -rf $finalto" | qsub -W depend=$DEPENDANY$cur_accum_jobid -W depend=$DEPEND:$copy_from_sync_jobid:$gatk_jobid $QCOPYFLAGS)
+		fi
 		copy_back_to_jobid=$(echo $copy_back_to_jobid | cut -d'.' -f 1)
-		echo "results: $RSYNC $RSYNCFLAGS $rsyncflags $finalto $RESULTS"
+		echo "$copy_back_to_jobid, copy back results: $RSYNC $RSYNCFLAGS $rsyncflags $finalto $RESULTS"
 		echo $finalto" jobid: "$copy_from_sync_jobid $gatk_jobid $copy_back_to_jobid
 	fi
+
+        next_accum_jobid=$next_accum_jobid:$copy_from_sync_jobid:$gatk_jobid:$copy_back_to_jobid
+        cur_jobid=$cur_accum_jobid:$copy_from_sync_jobid:$gatk_jobid:$copy_back_to_jobid
+        if [[ "$pcount" -eq "$PLIMIT" ]];
+        then
+                pcount=0
+                cur_accum_jobid=$cur_accum_jobid$next_accum_jobid
+                next_accum_jobid=""
+        fi
+
+        echo "Job: "$count "pcount: "$pcount" waiting jobid: "$cur_jobid
 done <$job
 
 echo "done"

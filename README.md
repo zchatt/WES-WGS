@@ -6,7 +6,11 @@ Pipelines and tools for  WES and WGS data processing
 ### Script description 
 1. Create submission script for rsync of .fastq files from RDS to HPC
 2. Creates submission script for bwa_gatk.sh
-3. Creates submission script for rsync of bwa_katk.sh results from HPC to RDS
+3. Creates submission script for rsync of bwa_katk.sh results from HPC to RDS. Script will remove -t folder after rsync results.
+4. Limit of parallel job to run concurrently with -p option. Default is 1. I.e. job will run sequentially.
+5. Option to define path for the result folder with -o option.
+6. Option to define path for storing the fastq processed with -kfq option. This is useful for converting bam to fastq.gz for reference.
+7. Script support for fastq to vcf and bam to fastq to vcf flow.
 
 # bwa_gatk.sh
 ## Align WGS or WES using BWA-MEM and call variants using GATK

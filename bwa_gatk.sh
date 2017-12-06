@@ -1,6 +1,6 @@
 #!/bin/bash
  
-### Author: Boris Guennewig & Zac Chatterton
+### Author: Boris Guennewig & Zac Chatterton  & Bell Lee
 ### Date: 2017/10/19
 
 # Modules
@@ -460,14 +460,14 @@ fi
 if  [ ! -f ${outDir}/${1}_hc.bam ]; then
     echo " gatk -T HaplotypeCaller \
     -R $genomeDir \
-    -o ${outDir}/${1}.vcf -I ${outDir}/${1}_snaut.bam \
+    -o ${outDir}/${1}.g.vcf -I ${outDir}/${1}_snaut.bam \
     -ERC GVCF --max_alternate_alleles 3 --read_filter OverclippedRead \
     --emitDroppedReads -bamout ${outDir}/${1}_hc.bam"
       
     echo "[TIME: gatk HaplotypeCaller]"
     time gatk -T HaplotypeCaller \
     -R $genomeDir \
-    -o ${outDir}/${1}.vcf -I ${outDir}/${1}_snaut.bam \
+    -o ${outDir}/${1}.g.vcf -I ${outDir}/${1}_snaut.bam \
     -ERC GVCF --max_alternate_alleles 3 --read_filter OverclippedRead \
     --emitDroppedReads -bamout ${outDir}/${1}_hc.bam
 else
