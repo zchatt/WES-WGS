@@ -50,6 +50,9 @@ NOTE: The hg38_avsnp147.txt annotations contained irregular lines. Lines were re
   #####   awk -F'\t' 'NF==6 {print}' hg38_avsnp147.txt > out_4tab_hg38_avsnp147.txt
   #####   cp out_4tab_hg38_avsnp147.txt hg38_avsnp147.txt
 
+# annotations to change - remove exac03,exac03nontcga,exac03nonpsych as gnomad is successor.
+
+
 RUN SCRIPT
 
 ~/scripts/annovar.sh CDS0024.20K_ /project/RDS-SMS-FFbigdata-RW/Genetics/Genomes/whole_genome_sequencing_2012/FASTQ/bwagatk_test/test_271117
